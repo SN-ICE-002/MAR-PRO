@@ -46,6 +46,10 @@ async function fetchGFWEvents(dateFrom, dateTo) {
       },
     },
     {
+      params: {
+        limit: 99,
+        offset: 0
+      },
       headers: {
         Authorization: `Bearer ${API_KEY}`,
         'Content-Type': 'application/json',
@@ -58,23 +62,24 @@ async function fetchGFWEvents(dateFrom, dateTo) {
 
 /**
  * Determine if a lat/lng point is inside any protected ecosystem polygon.
- * Simple bounding-box check — accurate enough for these zone sizes.
+ * Expects the 'ecosystems' array to be passed in to avoid redundant DB calls.
  */
-async function findEcosystemForPoint(lat, lng) {
-  const { rows } = await pool.query(
-    `SELECT id, name, geojson FROM ecosystems`
-  );
+function findEcosystemForPoint(lat, lng, ecosystems) {
+  if (!ecosystems || !Array.isArray(ecosystems)) return null;
 
-  for (const eco of rows) {
+  for (const eco of ecosystems) {
     const geo = eco.geojson;
     if (!geo?.geometry?.coordinates) continue;
-    const ring = geo.geometry.coordinates[0];
-    if (!ring) continue;
+    
+    // Support both Feature and Geometry structures
+    const coords = geo.type === 'Feature' ? geo.geometry.coordinates : geo.geometry.coordinates;
+    const ring = coords[0];
+    if (!ring || !Array.isArray(ring)) continue;
 
     const lngs = ring.map((c) => c[0]);
-    const lats  = ring.map((c) => c[1]);
+    const lats = ring.map((c) => c[1]);
     const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
-    const minLat  = Math.min(...lats),  maxLat  = Math.max(...lats);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
 
     if (lng >= minLng && lng <= maxLng && lat >= minLat && lat <= maxLat) {
       return eco.id;
@@ -101,35 +106,52 @@ async function syncGFWData() {
     const events = await fetchGFWEvents(dateFrom, dateTo);
     console.log(`   Found ${events.length} GFW events`);
 
+    const { rows: ecosystems } = await pool.query('SELECT id, geojson FROM ecosystems');
+
     let inserted = 0;
     for (const ev of events) {
+      // Ensure we have coordinates and a unique ID from GFW
       const lat = ev.position?.lat;
-      const lng = ev.position?.lon;
-      if (!lat || !lng) continue;
+      const lng = ev.position?.lon; 
+      const externalId = ev.id;
 
-      const ecoId = await findEcosystemForPoint(lat, lng);
+      if (!lat || !lng || !externalId) {
+        console.warn(`[GFW Sync] Skipping event due to missing data: id=${externalId || 'N/A'}, lat=${lat || 'N/A'}, lng=${lng || 'N/A'}`);
+        continue;
+      }
+
+      const ecoId = findEcosystemForPoint(lat, lng, ecosystems);
       const insideZone = ecoId !== null;
 
-      await pool.query(
-        `INSERT INTO fishing_events
-           (vessel_id, lat, lng, fishing_hours, event_date, inside_zone, ecosystem_id, source)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'gfw_api')
-         ON CONFLICT DO NOTHING`,
-        [
-          ev.vessel?.id || 'UNKNOWN',
-          lat,
-          lng,
-          ev.fishing?.totalDistanceKm || 0,
-          ev.start?.split('T')[0] || dateTo,
-          insideZone,
-          ecoId,
-        ]
-      );
-      inserted++;
+      try {
+        await pool.query(
+          `INSERT INTO fishing_events
+             (vessel_id, lat, lng, fishing_hours, event_date, inside_zone, ecosystem_id, source, external_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'gfw_api', $8)
+           ON CONFLICT (external_id) DO NOTHING`,
+          [
+            ev.vessel?.id || 'UNKNOWN',
+            lat,
+            lng,
+            ev.fishing?.totalDistanceKm || 0,
+            ev.start?.split('T')[0] || dateTo,
+            insideZone,
+            ecoId,
+            externalId
+          ]
+        );
+        inserted++;
+      } catch (dbErr) {
+        console.error(`[GFW Sync] DB Error for event ${externalId}:`, dbErr.message);
+      }
     }
-    console.log(`   ✓ ${inserted} GFW events upserted`);
+    console.log(`   ✓ ${inserted} GFW events processed`);
   } catch (err) {
-    console.error('❌ GFW sync failed:', err.message);
+    if (err.response) {
+      console.error('❌ GFW sync failed:', err.response.status, JSON.stringify(err.response.data, null, 2));
+    } else {
+      console.error('❌ GFW sync failed:', err.message);
+    }
   }
 }
 

@@ -62,6 +62,7 @@ CREATE TABLE fishing_events (
   inside_zone    BOOLEAN DEFAULT FALSE,
   ecosystem_id   INTEGER REFERENCES ecosystems(id) ON DELETE SET NULL,
   source         VARCHAR(50) DEFAULT 'seed',  -- 'seed' | 'gfw_api'
+  external_id    VARCHAR(255) UNIQUE,
   created_at     TIMESTAMPTZ DEFAULT NOW()
 );
 

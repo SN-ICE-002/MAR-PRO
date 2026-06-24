@@ -19,6 +19,19 @@ if (process.env.GFW_API_KEY) {
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
+// ── Debug Exception Logging ─────────────────────────
+process.on('uncaughtException', (err) => {
+  console.error('\n🔥 CRITICAL: Uncaught Exception!');
+  console.error('Message:', err.message);
+  console.error('Stack:', err.stack);
+  // Optional: don't exit immediately so we can read the log
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('\n🌋 CRITICAL: Unhandled Rejection at:', promise);
+  console.error('Reason:', reason);
+});
+
 // ── Middleware ──────────────────────────────────────
 app.use(cors());
 app.use(express.json());
