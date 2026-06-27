@@ -5,8 +5,9 @@ const pool    = require('../db');
 // GET /api/alerts — all unresolved alerts with zone + species names
 router.get('/', async (req, res) => {
   const includeResolved = req.query.resolved === 'true';
+  const { countryId }   = req.query;
   try {
-    const { rows } = await pool.query(`
+    let query = `
       SELECT
         a.id,
         a.alert_type,
@@ -33,7 +34,16 @@ router.get('/', async (req, res) => {
       LEFT JOIN ecosystems  e  ON e.id = a.ecosystem_id
       LEFT JOIN alert_species als ON als.alert_id = a.id
       LEFT JOIN species     s  ON s.id = als.species_id
-      WHERE a.resolved = $1 OR $2
+      WHERE (a.resolved = $1 OR $2)
+    `;
+    
+    const params = [false, includeResolved];
+    if (countryId) {
+      query += ` AND a.country_id = $3 `;
+      params.push(countryId);
+    }
+
+    query += `
       GROUP BY a.id, e.id, e.name, e.zone_type
       ORDER BY
         CASE a.severity
@@ -44,7 +54,9 @@ router.get('/', async (req, res) => {
           ELSE 5
         END,
         a.detected_at DESC
-    `, [false, includeResolved]);
+    `;
+
+    const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
     console.error('GET /api/alerts error:', err);

@@ -5,8 +5,9 @@ const pool    = require('../db');
 // GET /api/sightings — verified sightings with lat/lng + species info
 router.get('/', async (req, res) => {
   const verifiedOnly = req.query.all !== 'true';
+  const { countryId } = req.query;
   try {
-    const { rows } = await pool.query(`
+    let query = `
       SELECT
         sg.id,
         sg.lat,
@@ -22,9 +23,18 @@ router.get('/', async (req, res) => {
         s.iucn_status
       FROM sightings sg
       LEFT JOIN species s ON s.id = sg.species_id
-      WHERE sg.verified = true OR NOT $1
-      ORDER BY sg.sighted_at DESC
-    `, [verifiedOnly]);
+      WHERE (sg.verified = true OR NOT $1)
+    `;
+    
+    const params = [verifiedOnly];
+    if (countryId) {
+      query += ` AND sg.country_id = $2 `;
+      params.push(countryId);
+    }
+
+    query += ` ORDER BY sg.sighted_at DESC `;
+
+    const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
     console.error('GET /api/sightings error:', err);
@@ -34,7 +44,7 @@ router.get('/', async (req, res) => {
 
 // POST /api/sightings — submit a new community sighting
 router.post('/', async (req, res) => {
-  const { species_id, lat, lng, reported_by, description } = req.body;
+  const { species_id, lat, lng, reported_by, description, country_id } = req.body;
 
   // Basic validation
   if (!lat || !lng) {
@@ -54,10 +64,10 @@ router.post('/', async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO sightings (species_id, lat, lng, reported_by, description, verified)
-       VALUES ($1, $2, $3, $4, $5, false)
+      `INSERT INTO sightings (species_id, lat, lng, reported_by, description, verified, country_id)
+       VALUES ($1, $2, $3, $4, $5, false, $6)
        RETURNING *`,
-      [species_id || null, lat, lng, reported_by || 'Anonymous', description || null]
+      [species_id || null, lat, lng, reported_by || 'Anonymous', description || null, country_id || null]
     );
 
     res.status(201).json({

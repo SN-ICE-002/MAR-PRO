@@ -3,9 +3,10 @@ const router  = express.Router();
 const pool    = require('../db');
 
 // GET /api/ecosystems — all zones with health score
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
+  const { countryId } = req.query;
   try {
-    const { rows } = await pool.query(`
+    let query = `
       SELECT
         e.id,
         e.name,
@@ -13,15 +14,27 @@ router.get('/', async (_req, res) => {
         e.health_score,
         e.description,
         e.geojson,
+        e.country_id,
         e.created_at,
         COUNT(DISTINCT a.id) FILTER (WHERE a.resolved = false) AS active_alerts,
         COUNT(DISTINCT sz.species_id) AS species_count
       FROM ecosystems e
       LEFT JOIN alerts  a  ON a.ecosystem_id = e.id AND a.resolved = false
       LEFT JOIN species_zones sz ON sz.ecosystem_id = e.id
+    `;
+    
+    const params = [];
+    if (countryId) {
+      query += ` WHERE e.country_id = $1 `;
+      params.push(countryId);
+    }
+
+    query += `
       GROUP BY e.id
       ORDER BY e.name
-    `);
+    `;
+
+    const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
     console.error('GET /api/ecosystems error:', err);

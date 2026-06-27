@@ -125,8 +125,36 @@
   padding: 0 4px;
 }
 
+/* Header search & Country Select */
+.header-search {
+  margin-left: 20px;
+}
+.country-dropdown select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 6px 12px;
+  outline: none;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+  min-width: 160px;
+}
+.country-dropdown select:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--teal-500);
+}
+.country-dropdown select option {
+  background: var(--bg-navy);
+  color: var(--text-primary);
+}
+
 /* Header status */
 .header-status {
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
   margin-left: auto;
   display: flex;
   align-items: center;

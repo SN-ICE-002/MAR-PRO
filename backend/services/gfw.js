@@ -1,6 +1,6 @@
 /**
  * GFW (Global Fishing Watch) API Service
- * Fetches vessel fishing events from the GFW API v3.
+ * Fetches vessel fishing events from the GFW API v3 for multiple Pacific countries.
  * Only called if GFW_API_KEY is set in .env
  *
  * Docs: https://globalfishingwatch.org/our-apis/documentation
@@ -12,20 +12,13 @@ const pool  = require('../db');
 const GFW_BASE  = 'https://gateway.api.globalfishingwatch.org/v3';
 const API_KEY   = process.env.GFW_API_KEY;
 
-// Bounding box for Vanuatu waters
-const VANUATU_BBOX = {
-  minLat: -22,
-  maxLat: -12,
-  minLng:  165,
-  maxLng:  171,
-};
-
 /**
- * Fetch recent fishing events from GFW API for Vanuatu waters.
- * @param {string} dateFrom  ISO date string  e.g. '2025-01-01'
+ * Fetch recent fishing events from GFW API for a specific bounding box.
+ * @param {string} dateFrom  ISO date string
  * @param {string} dateTo    ISO date string
+ * @param {object} bbox      { minLat, maxLat, minLng, maxLng }
  */
-async function fetchGFWEvents(dateFrom, dateTo) {
+async function fetchGFWEvents(dateFrom, dateTo, bbox) {
   if (!API_KEY) throw new Error('GFW_API_KEY is not set');
 
   const response = await axios.post(
@@ -37,19 +30,16 @@ async function fetchGFWEvents(dateFrom, dateTo) {
       geometry: {
         type: 'Polygon',
         coordinates: [[
-          [VANUATU_BBOX.minLng, VANUATU_BBOX.minLat],
-          [VANUATU_BBOX.maxLng, VANUATU_BBOX.minLat],
-          [VANUATU_BBOX.maxLng, VANUATU_BBOX.maxLat],
-          [VANUATU_BBOX.minLng, VANUATU_BBOX.maxLat],
-          [VANUATU_BBOX.minLng, VANUATU_BBOX.minLat],
+          [bbox.minLng, bbox.minLat],
+          [bbox.maxLng, bbox.minLat],
+          [bbox.maxLng, bbox.maxLat],
+          [bbox.minLng, bbox.maxLat],
+          [bbox.minLng, bbox.minLat],
         ]],
       },
     },
     {
-      params: {
-        limit: 99,
-        offset: 0
-      },
+      params: { limit: 99, offset: 0 },
       headers: {
         Authorization: `Bearer ${API_KEY}`,
         'Content-Type': 'application/json',
@@ -61,8 +51,7 @@ async function fetchGFWEvents(dateFrom, dateTo) {
 }
 
 /**
- * Determine if a lat/lng point is inside any protected ecosystem polygon.
- * Expects the 'ecosystems' array to be passed in to avoid redundant DB calls.
+ * Determine if a lat/lng point is inside any protected ecosystem polygon for a country.
  */
 function findEcosystemForPoint(lat, lng, ecosystems) {
   if (!ecosystems || !Array.isArray(ecosystems)) return null;
@@ -72,7 +61,7 @@ function findEcosystemForPoint(lat, lng, ecosystems) {
     if (!geo?.geometry?.coordinates) continue;
     
     // Support both Feature and Geometry structures
-    const coords = geo.type === 'Feature' ? geo.geometry.coordinates : geo.geometry.coordinates;
+    const coords = geo.geometry.coordinates;
     const ring = coords[0];
     if (!ring || !Array.isArray(ring)) continue;
 
@@ -89,7 +78,7 @@ function findEcosystemForPoint(lat, lng, ecosystems) {
 }
 
 /**
- * Pull latest GFW data and upsert into fishing_events table.
+ * Pull latest GFW data for ALL countries registered in the database.
  */
 async function syncGFWData() {
   if (!API_KEY) {
@@ -97,61 +86,63 @@ async function syncGFWData() {
     return;
   }
 
-  const dateTo   = new Date().toISOString().split('T')[0];
-  const dateFrom = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-  console.log(`🌐 GFW sync: fetching events ${dateFrom} → ${dateTo}`);
-
   try {
-    const events = await fetchGFWEvents(dateFrom, dateTo);
-    console.log(`   Found ${events.length} GFW events`);
+    const { rows: countries } = await pool.query('SELECT * FROM countries');
+    console.log(`🌐 GFW sync: Processing ${countries.length} Pacific countries`);
 
-    const { rows: ecosystems } = await pool.query('SELECT id, geojson FROM ecosystems');
+    const dateTo   = new Date().toISOString().split('T')[0];
+    const dateFrom = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    let inserted = 0;
-    for (const ev of events) {
-      // Ensure we have coordinates and a unique ID from GFW
-      const lat = ev.position?.lat;
-      const lng = ev.position?.lon; 
-      const externalId = ev.id;
-
-      if (!lat || !lng || !externalId) {
-        console.warn(`[GFW Sync] Skipping event due to missing data: id=${externalId || 'N/A'}, lat=${lat || 'N/A'}, lng=${lng || 'N/A'}`);
-        continue;
-      }
-
-      const ecoId = findEcosystemForPoint(lat, lng, ecosystems);
-      const insideZone = ecoId !== null;
-
+    for (const country of countries) {
+      console.log(`   → Syncing ${country.name} (${country.code})`);
+      
       try {
-        await pool.query(
-          `INSERT INTO fishing_events
-             (vessel_id, lat, lng, fishing_hours, event_date, inside_zone, ecosystem_id, source, external_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, 'gfw_api', $8)
-           ON CONFLICT (external_id) DO NOTHING`,
-          [
-            ev.vessel?.id || 'UNKNOWN',
-            lat,
-            lng,
-            ev.fishing?.totalDistanceKm || 0,
-            ev.start?.split('T')[0] || dateTo,
-            insideZone,
-            ecoId,
-            externalId
-          ]
+        const events = await fetchGFWEvents(dateFrom, dateTo, country.bbox);
+        console.log(`     Found ${events.length} GFW events for ${country.name}`);
+
+        const { rows: ecosystems } = await pool.query(
+          'SELECT id, geojson FROM ecosystems WHERE country_id = $1', 
+          [country.id]
         );
-        inserted++;
-      } catch (dbErr) {
-        console.error(`[GFW Sync] DB Error for event ${externalId}:`, dbErr.message);
+
+        let inserted = 0;
+        for (const ev of events) {
+          const lat = ev.position?.lat;
+          const lng = ev.position?.lon; 
+          const externalId = ev.id;
+
+          if (!lat || !lng || !externalId) continue;
+
+          const ecoId = findEcosystemForPoint(lat, lng, ecosystems);
+          const insideZone = ecoId !== null;
+
+          await pool.query(
+            `INSERT INTO fishing_events
+               (vessel_id, lat, lng, fishing_hours, event_date, inside_zone, ecosystem_id, source, external_id, country_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 'gfw_api', $8, $9)
+             ON CONFLICT (external_id) DO NOTHING`,
+            [
+              ev.vessel?.id || 'UNKNOWN',
+              lat,
+              lng,
+              ev.fishing?.totalDistanceKm || 0,
+              ev.start?.split('T')[0] || dateTo,
+              insideZone,
+              ecoId,
+              externalId,
+              country.id
+            ]
+          );
+          inserted++;
+        }
+        console.log(`     ✓ ${inserted} GFW events processed for ${country.name}`);
+      } catch (countryErr) {
+        const detail = countryErr.response?.data ? JSON.stringify(countryErr.response.data) : countryErr.message;
+        console.error(`   ❌ Failed for ${country.name}:`, detail);
       }
     }
-    console.log(`   ✓ ${inserted} GFW events processed`);
   } catch (err) {
-    if (err.response) {
-      console.error('❌ GFW sync failed:', err.response.status, JSON.stringify(err.response.data, null, 2));
-    } else {
-      console.error('❌ GFW sync failed:', err.message);
-    }
+    console.error('❌ Global GFW sync error:', err.message);
   }
 }
 

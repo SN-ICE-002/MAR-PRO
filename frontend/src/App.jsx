@@ -4,10 +4,12 @@ import StatsChart from './components/StatsChart';
 import AlertPanel from './components/AlertPanel';
 import ZonePanel from './components/ZonePanel';
 import SightingForm from './components/SightingForm';
-import { getEcosystems, getSpecies, getRecentEvents, getAlerts, getSightings, getEcosystem } from './api';
+import { getEcosystems, getSpecies, getRecentEvents, getAlerts, getSightings, getEcosystem, getCountries } from './api';
 import './App.css';
 
 export default function App() {
+  const [countries,      setCountries]     = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState(null);
   const [ecosystems,    setEcosystems]    = useState([]);
   const [species,       setSpecies]       = useState([]);
   const [events,        setEvents]        = useState([]);
@@ -18,15 +20,31 @@ export default function App() {
   const [error,         setError]         = useState(null);
   const [sidebarView,   setSidebarView]   = useState('dashboard'); // 'dashboard' | 'zone' | 'report'
 
-  const fetchAll = useCallback(async () => {
+  // Fetch countries once on mount
+  useEffect(() => {
+    getCountries()
+      .then(data => {
+        setCountries(data);
+        const vut = data.find(c => c.code === 'VUT') || data[0];
+        setSelectedCountry(vut);
+      })
+      .catch(err => {
+        console.error('Countries fetch error:', err);
+        setError('Connection error: backend not reachable.');
+        setLoading(false);
+      });
+  }, []);
+
+  const fetchAll = useCallback(async (countryId) => {
+    if (!countryId) return;
     try {
       setError(null);
       const [eco, sp, ev, al, sg] = await Promise.all([
-        getEcosystems(),
+        getEcosystems(countryId),
         getSpecies(),
-        getRecentEvents(),
-        getAlerts(),
-        getSightings(),
+        getRecentEvents(countryId),
+        getAlerts(countryId),
+        getSightings(countryId),
       ]);
       setEcosystems(eco);
       setSpecies(sp);
@@ -35,13 +53,16 @@ export default function App() {
       setSightings(sg);
     } catch (err) {
       console.error('Fetch error:', err);
-      setError('Could not connect to Ocean Guardian API. Is the backend running on port 3001?');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => { 
+    if (selectedCountry) {
+      fetchAll(selectedCountry.id); 
+    }
+  }, [fetchAll, selectedCountry]);
 
   const handleZoneClick = useCallback(async (ecosystem) => {
     try {
@@ -81,7 +102,23 @@ export default function App() {
           <span className="logo-icon">🌊</span>
           <div>
             <h1>Ocean Guardian</h1>
-            <span className="logo-sub">Vanuatu Marine Monitor</span>
+            <span className="logo-sub">{selectedCountry?.name || 'Pacific'} Marine Monitor</span>
+          </div>
+        </div>
+
+        <div className="header-search">
+          <div className="country-dropdown">
+            <select 
+              value={selectedCountry?.code || ''} 
+              onChange={(e) => {
+                const country = countries.find(c => c.code === e.target.value);
+                setSelectedCountry(country);
+              }}
+            >
+              {countries.map(c => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -114,7 +151,7 @@ export default function App() {
 
         <div className="header-status">
           <span className="status-dot live" />
-          <span>{ecosystems.length} Zones · {species.length} Species · {events.length} Events (7d)</span>
+          <span>{ecosystems.length} Zones · {events.length} Events (7d)</span>
         </div>
       </header>
 
@@ -129,6 +166,8 @@ export default function App() {
         {/* Map — takes remaining space */}
         <div className="map-container">
           <Map
+            center={[selectedCountry?.center_lat || -15.3767, selectedCountry?.center_lng || 166.9592]}
+            zoom={selectedCountry?.zoom_level || 6}
             ecosystems={ecosystems}
             events={events}
             sightings={sightings}
@@ -179,6 +218,7 @@ export default function App() {
               <SightingForm
                 species={species}
                 onSubmitted={handleSightingSubmitted}
+                selectedCountry={selectedCountry}
               />
             </div>
           )}

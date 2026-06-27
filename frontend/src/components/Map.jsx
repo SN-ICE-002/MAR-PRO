@@ -16,12 +16,12 @@ const iucnColours = { CR: '#ef4444', EN: '#f97316', VU: '#eab308', NT: '#3b82f6'
 function ResetView({ center, zoom }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, zoom, { animate: true });
-  }, []); // eslint-disable-line
+    map.setView(center, zoom, { animate: true, duration: 1.5 });
+  }, [center, zoom, map]);
   return null;
 }
 
-export default function Map({ ecosystems, events, sightings, onZoneClick, selectedZoneId }) {
+export default function Map({ center, zoom, ecosystems, events, sightings, onZoneClick, selectedZoneId }) {
   const geoJsonRef = useRef({});
 
   // Style for GeoJSON ecosystem polygons
@@ -41,13 +41,13 @@ export default function Map({ ecosystems, events, sightings, onZoneClick, select
 
   return (
     <MapContainer
-      center={[-16.5, 167.5]}
-      zoom={6}
+      center={center}
+      zoom={zoom}
       className="leaflet-map"
       zoomControl={true}
       scrollWheelZoom={true}
     >
-      <ResetView center={[-16.5, 167.5]} zoom={6} />
+      <ResetView center={center} zoom={zoom} />
 
       {/* ─── Dark basemap ─── */}
       <TileLayer

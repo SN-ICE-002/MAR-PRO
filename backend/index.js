@@ -7,6 +7,7 @@ const speciesRouter    = require('./routes/species');
 const eventsRouter     = require('./routes/events');
 const alertsRouter     = require('./routes/alerts');
 const sightingsRouter  = require('./routes/sightings');
+const countriesRouter  = require('./routes/countries');
 
 // ── GFW cron (only starts when API key is present) ──
 if (process.env.GFW_API_KEY) {
@@ -48,6 +49,7 @@ app.use('/api/species',    speciesRouter);
 app.use('/api/events',     eventsRouter);
 app.use('/api/alerts',     alertsRouter);
 app.use('/api/sightings',  sightingsRouter);
+app.use('/api/countries',  countriesRouter);
 
 // ── Health check ────────────────────────────────────
 app.get('/api/health', (_req, res) => {

@@ -10,7 +10,7 @@ const DEFAULT_FORM = {
   description: '',
 };
 
-export default function SightingForm({ species, onSubmitted }) {
+export default function SightingForm({ species, onSubmitted, selectedCountry }) {
   const [form,       setForm]       = useState(DEFAULT_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [success,    setSuccess]    = useState(false);
@@ -33,9 +33,15 @@ export default function SightingForm({ species, onSubmitted }) {
       setError('Please enter valid numeric coordinates.');
       return;
     }
-    if (latN < -25 || latN > -10 || lngN < 163 || lngN > 172) {
-      setError('Coordinates should be within Vanuatu waters (lat -25 to -10, lng 163 to 172).');
-      return;
+
+    // Dynamic bbox validation based on selected country
+    if (selectedCountry?.bbox) {
+       const { minLat, maxLat, minLng, maxLng } = selectedCountry.bbox;
+       // Allow a small buffer (0.5 degrees) for reports near boundaries
+       if (latN < minLat - 0.5 || latN > maxLat + 0.5 || lngN < minLng - 0.5 || lngN > maxLng + 0.5) {
+         setError(`Please enter coordinates within ${selectedCountry.name}'s region.`);
+         return;
+       }
     }
 
     setSubmitting(true);
@@ -47,6 +53,7 @@ export default function SightingForm({ species, onSubmitted }) {
         lng:         lngN,
         reported_by: form.reported_by.trim() || 'Anonymous',
         description: form.description.trim() || null,
+        country_id:  selectedCountry?.id || null
       });
       setSuccess(true);
       setTimeout(() => {
@@ -74,7 +81,7 @@ export default function SightingForm({ species, onSubmitted }) {
   return (
     <form className="sighting-form" onSubmit={handleSubmit} id="sighting-form">
       <div className="form-intro">
-        <p>Help us protect Vanuatu's ocean by reporting what you see. All community sightings help us track species and identify threats.</p>
+        <p>Help us protect {selectedCountry?.name || "the ocean"} by reporting what you see. All community sightings help us track species and identify threats.</p>
       </div>
 
       {/* Species */}
@@ -105,7 +112,7 @@ export default function SightingForm({ species, onSubmitted }) {
             name="lat"
             type="number"
             step="0.000001"
-            placeholder="-16.500"
+            placeholder={selectedCountry?.center_lat.toFixed(3) || "-16.500"}
             className="form-input"
             value={form.lat}
             onChange={handleChange}
@@ -119,7 +126,7 @@ export default function SightingForm({ species, onSubmitted }) {
             name="lng"
             type="number"
             step="0.000001"
-            placeholder="167.500"
+            placeholder={selectedCountry?.center_lng.toFixed(3) || "167.500"}
             className="form-input"
             value={form.lng}
             onChange={handleChange}
@@ -129,7 +136,7 @@ export default function SightingForm({ species, onSubmitted }) {
       </div>
 
       <div className="coord-hint">
-        💡 Vanuatu is approx. lat -25 to -10, lng 163 to 172
+        💡 {selectedCountry ? `${selectedCountry.name} is approx. lat ${selectedCountry.bbox.minLat} to ${selectedCountry.bbox.maxLat}` : "Please enter decimal degrees"}
       </div>
 
       {/* Reporter */}
