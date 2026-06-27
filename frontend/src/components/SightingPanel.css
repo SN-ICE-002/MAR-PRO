@@ -1,0 +1,100 @@
+.sighting-panel {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sighting-panel h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sighting-count-badge {
+  background: var(--teal-500);
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+.sighting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sighting-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  transition: all 0.2s;
+}
+
+.sighting-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--teal-500);
+}
+
+.sighting-card-header {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.sighting-icon {
+  font-size: 18px;
+}
+
+.sighting-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.sighting-main strong {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.sighting-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.sighting-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.sighting-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sighting-reporter {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.verified-badge {
+  font-size: 9px;
+  color: var(--teal-400);
+  font-weight: 600;
+}
+
+.sighting-empty {
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}

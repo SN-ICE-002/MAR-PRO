@@ -88,17 +88,19 @@ async function syncGFWData() {
 
   try {
     const { rows: countries } = await pool.query('SELECT * FROM countries');
-    console.log(`🌐 GFW sync: Processing ${countries.length} Pacific countries`);
+    console.log(`\n🌐 GFW sync: Processing ${countries.length} Pacific countries`);
 
     const dateTo   = new Date().toISOString().split('T')[0];
     const dateFrom = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+    let count = 0;
     for (const country of countries) {
-      console.log(`   → Syncing ${country.name} (${country.code})`);
+      count++;
+      console.log(`   [${count}/${countries.length}] Syncing ${country.name}...`);
       
       try {
         const events = await fetchGFWEvents(dateFrom, dateTo, country.bbox);
-        console.log(`     Found ${events.length} GFW events for ${country.name}`);
+        console.log(`     🛰️  Found ${events.length} events`);
 
         const { rows: ecosystems } = await pool.query(
           'SELECT id, geojson FROM ecosystems WHERE country_id = $1', 
@@ -110,37 +112,24 @@ async function syncGFWData() {
           const lat = ev.position?.lat;
           const lng = ev.position?.lon; 
           const externalId = ev.id;
-
           if (!lat || !lng || !externalId) continue;
 
           const ecoId = findEcosystemForPoint(lat, lng, ecosystems);
           const insideZone = ecoId !== null;
 
           await pool.query(
-            `INSERT INTO fishing_events
-               (vessel_id, lat, lng, fishing_hours, event_date, inside_zone, ecosystem_id, source, external_id, country_id)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, 'gfw_api', $8, $9)
-             ON CONFLICT (external_id) DO NOTHING`,
-            [
-              ev.vessel?.id || 'UNKNOWN',
-              lat,
-              lng,
-              ev.fishing?.totalDistanceKm || 0,
-              ev.start?.split('T')[0] || dateTo,
-              insideZone,
-              ecoId,
-              externalId,
-              country.id
-            ]
+            `INSERT INTO fishing_events (vessel_id, lat, lng, fishing_hours, event_date, inside_zone, ecosystem_id, source, external_id, country_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 'gfw_api', $8, $9) ON CONFLICT (external_id) DO NOTHING`,
+            [ev.vessel?.id || 'UNKNOWN', lat, lng, ev.fishing?.totalDistanceKm || 0, ev.start?.split('T')[0] || dateTo, insideZone, ecoId, externalId, country.id]
           );
           inserted++;
         }
-        console.log(`     ✓ ${inserted} GFW events processed for ${country.name}`);
+        console.log(`     ✅ Processed`);
       } catch (countryErr) {
-        const detail = countryErr.response?.data ? JSON.stringify(countryErr.response.data) : countryErr.message;
-        console.error(`   ❌ Failed for ${country.name}:`, detail);
+        console.error(`     ❌ Error:`, countryErr.message);
       }
     }
+    console.log('\n🌟 GFW batch sync completed\n');
   } catch (err) {
     console.error('❌ Global GFW sync error:', err.message);
   }

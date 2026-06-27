@@ -4,6 +4,7 @@ import StatsChart from './components/StatsChart';
 import AlertPanel from './components/AlertPanel';
 import ZonePanel from './components/ZonePanel';
 import SightingForm from './components/SightingForm';
+import SightingPanel from './components/SightingPanel';
 import { getEcosystems, getSpecies, getRecentEvents, getAlerts, getSightings, getEcosystem, getCountries } from './api';
 import './App.css';
 
@@ -187,6 +188,7 @@ export default function App() {
                 onViewAll={() => setSidebarView('alerts')}
                 compact
               />
+              <SightingPanel sightings={sightings} compact />
             </div>
           )}
 
