@@ -5,7 +5,7 @@ import AlertPanel from './components/AlertPanel';
 import ZonePanel from './components/ZonePanel';
 import SightingForm from './components/SightingForm';
 import SightingPanel from './components/SightingPanel';
-import { getEcosystems, getSpecies, getRecentEvents, getAlerts, getSightings, getEcosystem, getCountries } from './api';
+import { getEcosystems, getSpecies, getRecentEvents, getAlerts, getSightings, getEcosystem, getCountries, getProjections } from './api';
 import './App.css';
 
 export default function App() {
@@ -17,6 +17,7 @@ export default function App() {
   const [alerts,        setAlerts]        = useState([]);
   const [sightings,     setSightings]     = useState([]);
   const [selectedZone,  setSelectedZone]  = useState(null);
+  const [projections,   setProjections]   = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [error,         setError]         = useState(null);
   const [sidebarView,   setSidebarView]   = useState('dashboard'); // 'dashboard' | 'zone' | 'report'
@@ -52,6 +53,14 @@ export default function App() {
       setEvents(ev);
       setAlerts(al);
       setSightings(sg);
+
+      // Fetch projections separately so failures don't break main data load
+      try {
+        const prj = await getProjections();
+        setProjections(prj);
+      } catch (prjErr) {
+        console.warn('Projections fetch failed:', prjErr.message);
+      }
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
@@ -67,8 +76,12 @@ export default function App() {
 
   const handleZoneClick = useCallback(async (ecosystem) => {
     try {
-      const full = await getEcosystem(ecosystem.id);
+      const [full, prj] = await Promise.all([
+        getEcosystem(ecosystem.id),
+        getProjections(),
+      ]);
       setSelectedZone(full);
+      setProjections(prj);
       setSidebarView('zone');
     } catch (err) {
       console.error('Zone fetch error:', err);
@@ -206,6 +219,7 @@ export default function App() {
             <div className="fade-slide-in">
               <ZonePanel
                 zone={selectedZone}
+                projection={projections.find(p => Number(p.id) === Number(selectedZone.id))}
                 onClose={() => setSidebarView('dashboard')}
               />
             </div>

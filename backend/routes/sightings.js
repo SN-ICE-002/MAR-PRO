@@ -15,21 +15,25 @@ router.get('/', async (req, res) => {
         sg.reported_by,
         sg.description,
         sg.verified,
+        sg.source,
         sg.sighted_at,
         sg.created_at,
+        sg.species_name_raw,
         s.id            AS species_id,
-        s.common_name   AS species_name,
+        COALESCE(s.common_name, sg.species_name_raw) AS species_name,
         s.scientific_name,
         s.iucn_status
       FROM sightings sg
       LEFT JOIN species s ON s.id = sg.species_id
-      WHERE (sg.verified = true OR NOT $1)
+      WHERE (sg.verified = true OR sg.source = 'GBIF' OR NOT $1)
     `;
     
     const params = [verifiedOnly];
     if (countryId) {
       query += ` AND sg.country_id = $2 `;
       params.push(countryId);
+    } else {
+      // If no countryId, we can either return all or a default
     }
 
     query += ` ORDER BY sg.sighted_at DESC `;

@@ -8,14 +8,19 @@ const eventsRouter     = require('./routes/events');
 const alertsRouter     = require('./routes/alerts');
 const sightingsRouter  = require('./routes/sightings');
 const countriesRouter  = require('./routes/countries');
+const projectionsRouter = require('./routes/projections');
 
 // ── GFW cron (only starts when API key is present) ──
 if (process.env.GFW_API_KEY) {
   require('./cron/pollGFW');
   console.log('🌐 GFW polling cron activated');
-} else {
-  console.log('ℹ️  GFW_API_KEY not set — running in seed-data mode');
 }
+// ── GBIF cron (Biodiversity data) ──
+const { startGBIFCron } = require('./cron/pollGBIF');
+startGBIFCron();
+// ── NOAA cron (Ocean climate) ──
+const { startNOAACron } = require('./cron/pollNOAA');
+startNOAACron();
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -50,6 +55,7 @@ app.use('/api/events',     eventsRouter);
 app.use('/api/alerts',     alertsRouter);
 app.use('/api/sightings',  sightingsRouter);
 app.use('/api/countries',  countriesRouter);
+app.use('/api/projections', projectionsRouter);
 
 // ── Health check ────────────────────────────────────
 app.get('/api/health', (_req, res) => {

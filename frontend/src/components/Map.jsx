@@ -29,6 +29,19 @@ export default function Map({ center, zoom, ecosystems, events, sightings, onZon
     const eco = ecosystems.find(e => String(e.id) === String(ecoId));
     const score = eco?.health_score || 70;
     const isSelected = String(eco?.id) === String(selectedZoneId);
+    
+    // Territories (EEZ) get a subtle dashed border style
+    if (eco?.zone_type === 'territory') {
+      return {
+        color: '#94a3b8',
+        weight: 1.5,
+        dashArray: '10, 10',
+        fillOpacity: 0.02,
+        fillColor: 'transparent',
+        interactive: false // This prevents the EEZ from blocking clicks on reefs
+      };
+    }
+
     const colour = healthColour(score);
     return {
       color:       isSelected ? '#ffffff' : colour,
@@ -143,50 +156,77 @@ export default function Map({ center, zoom, ecosystems, events, sightings, onZon
       ))}
 
       {/* ─── Species sighting dots ─── */}
-      {sightings.map((sg) => (
-        <CircleMarker
-          key={sg.id}
-          center={[parseFloat(sg.lat), parseFloat(sg.lng)]}
-          radius={9}
-          pathOptions={{
-            color:       '#4ade80',
-            fillColor:   '#4ade80',
-            fillOpacity: 0.8,
-            weight:      2,
-          }}
-        >
-          <Popup>
-            <div className="map-popup">
-              <div className="popup-sighting-header">
-                👁️ Species Sighting
-                {iucnColours[sg.iucn_status] && (
-                  <span
-                    className="badge"
-                    style={{
-                      background: `${iucnColours[sg.iucn_status]}22`,
-                      color: iucnColours[sg.iucn_status],
-                      border: `1px solid ${iucnColours[sg.iucn_status]}55`,
-                      marginLeft: 8,
-                    }}
-                  >
-                    {sg.iucn_status}
-                  </span>
-                )}
+      {sightings.map((sg) => {
+        const isGBIF = String(sg.source).toUpperCase() === 'GBIF';
+        return (
+          <CircleMarker
+            key={sg.id}
+            center={[parseFloat(sg.lat), parseFloat(sg.lng)]}
+            radius={isGBIF ? 7 : 9}
+            pathOptions={{
+              color:       isGBIF ? '#8b5cf6' : '#4ade80',
+              fillColor:   isGBIF ? '#8b5cf6' : '#4ade80',
+              fillOpacity: isGBIF ? 0.6 : 0.8,
+              weight:      isGBIF ? 1.5 : 2,
+            }}
+          >
+            <Popup>
+              <div className="map-popup">
+                <div className="popup-sighting-header">
+                  {isGBIF ? '🧬 Scientific Record' : '👁️ Community Sighting'}
+                  {iucnColours[sg.iucn_status] && (
+                    <span
+                      className="badge"
+                      style={{
+                        background: `${iucnColours[sg.iucn_status]}22`,
+                        color: iucnColours[sg.iucn_status],
+                        border: `1px solid ${iucnColours[sg.iucn_status]}55`,
+                        marginLeft: 8,
+                      }}
+                    >
+                      {sg.iucn_status}
+                    </span>
+                  )}
+                </div>
+                <strong style={{ fontSize: 14 }}>{sg.species_name}</strong>
+                <em style={{ display: 'block', fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>
+                  {sg.scientific_name}
+                </em>
+                <p style={{ fontSize: 12 }}>{sg.description}</p>
+                <div className="popup-reporter">
+                  Source: <strong>{isGBIF ? 'GBIF Registry' : sg.reported_by}</strong>
+                  {' · '}
+                  {new Date(sg.sighted_at).toLocaleDateString()}
+                </div>
               </div>
-              <strong style={{ fontSize: 14 }}>{sg.species_name}</strong>
-              <em style={{ display: 'block', fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>
-                {sg.scientific_name}
-              </em>
-              <p style={{ fontSize: 12 }}>{sg.description}</p>
-              <div className="popup-reporter">
-                Reported by <strong>{sg.reported_by}</strong>
-                {' · '}
-                {new Date(sg.sighted_at).toLocaleDateString()}
-              </div>
-            </div>
-          </Popup>
-        </CircleMarker>
-      ))}
+            </Popup>
+          </CircleMarker>
+        );
+      })}
+      {/* ─── Map Legend ─── */}
+      <div className="map-legend">
+        <h4>Status Legend</h4>
+        <div className="legend-row">
+          <div className="legend-dot" style={{ backgroundColor: '#ef4444' }} />
+          <span>Fishing Pressure</span>
+        </div>
+        <div className="legend-row">
+          <div className="legend-dot" style={{ backgroundColor: '#14b8a6' }} />
+          <span>Coral Health</span>
+        </div>
+        <div className="legend-row">
+          <div className="legend-dot" style={{ backgroundColor: '#4ade80' }} />
+          <span>Community Sightings</span>
+        </div>
+        <div className="legend-row">
+          <div className="legend-dot" style={{ backgroundColor: '#8b5cf6' }} />
+          <span>GBIF Records</span>
+        </div>
+        <div className="legend-row">
+          <div className="legend-dot dash" />
+          <span>National EEZ</span>
+        </div>
+      </div>
     </MapContainer>
   );
 }

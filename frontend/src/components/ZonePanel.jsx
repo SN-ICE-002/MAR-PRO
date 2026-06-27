@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+import { getProjections } from '../api';
 import './ZonePanel.css';
 
 function healthColour(score) {
@@ -5,6 +7,18 @@ function healthColour(score) {
   if (score >= 60) return '#14b8a6';
   if (score >= 40) return '#eab308';
   return '#ef4444';
+}
+
+function riskColour(score) {
+  if (score > 70) return '#ef4444';
+  if (score > 40) return '#f97316';
+  return '#22c55e';
+}
+
+function riskBg(score) {
+  if (score > 70) return 'rgba(239, 68, 68, 0.12)';
+  if (score > 40) return 'rgba(249, 115, 22, 0.10)';
+  return 'rgba(34, 197, 94, 0.07)';
 }
 
 const zoneTypeIcons = {
@@ -26,6 +40,23 @@ export default function ZonePanel({ zone, onClose }) {
   const colour  = healthColour(zone.health_score);
   const icon    = zoneTypeIcons[zone.zone_type] || '🌊';
   const dateStr = (d) => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+
+  // ── Self-contained projection fetch ──────────────────────────
+  const [projection, setProjection] = useState(null);
+  const [projLoading, setProjLoading] = useState(true);
+
+  useEffect(() => {
+    setProjLoading(true);
+    setProjection(null);
+    getProjections()
+      .then(data => {
+        const match = data.find(p => Number(p.id) === Number(zone.id));
+        setProjection(match || null);
+      })
+      .catch(err => console.warn('Projection fetch failed:', err.message))
+      .finally(() => setProjLoading(false));
+  }, [zone.id]);
+  // ─────────────────────────────────────────────────────────────
 
   return (
     <div className="zone-panel">
@@ -63,6 +94,52 @@ export default function ZonePanel({ zone, onClose }) {
         </div>
       </div>
 
+      {/* ── 6-Month Risk Outlook ── */}
+      <div className="zone-projection-block" style={{
+        background: projection ? riskBg(projection.riskScore) : 'rgba(100,116,139,0.08)',
+        border: `1px solid ${projection ? riskColour(projection.riskScore) + '40' : '#334155'}`,
+      }}>
+        <div className="projection-header">
+          <span className="projection-icon">🔮</span>
+          <span className="projection-label">6-Month Risk Outlook</span>
+        </div>
+
+        {projLoading && (
+          <p style={{ color: '#64748b', fontSize: 12, margin: 0 }}>Calculating…</p>
+        )}
+
+        {!projLoading && projection && (
+          <>
+            <div className="projection-status">
+              <h4 style={{ color: riskColour(projection.riskScore), margin: '4px 0 2px' }}>
+                {projection.projection}
+              </h4>
+              <div className="risk-bar-track">
+                <div
+                  className="risk-bar-fill"
+                  style={{
+                    width: `${projection.riskScore}%`,
+                    background: riskColour(projection.riskScore),
+                  }}
+                />
+              </div>
+              <div className="risk-score-display">
+                Risk Score: <strong>{projection.riskScore} / 100</strong>
+              </div>
+            </div>
+            <p className="projection-hint">
+              Based on habitat health, fishing pressure &amp; climate alerts.
+            </p>
+          </>
+        )}
+
+        {!projLoading && !projection && (
+          <p style={{ color: '#64748b', fontSize: 12, margin: 0 }}>
+            No projection data available for this zone.
+          </p>
+        )}
+      </div>
+
       {/* Description */}
       {zone.description && (
         <div className="zone-description">
@@ -95,7 +172,7 @@ export default function ZonePanel({ zone, onClose }) {
         )}
       </div>
 
-      {/* Health history mini-chart (text-based sparkline) */}
+      {/* Health history mini-chart */}
       {zone.health_history?.length > 0 && (
         <div className="zone-history-section">
           <h3>Health Trend (14 days)</h3>

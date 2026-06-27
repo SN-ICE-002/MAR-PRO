@@ -37,6 +37,18 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
+.legend-dot.dash {
+  border-radius: 2px;
+  border: 1px dashed #64748b;
+  background: transparent;
+}
+.badge {
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
 
 /* ─── Popups ─── */
 .map-popup { min-width: 200px; }

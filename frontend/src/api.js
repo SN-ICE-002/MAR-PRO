@@ -27,4 +27,8 @@ export const resolveAlert   = (id)        => api.patch(`/api/alerts/${id}/resolv
 export const getSightings   = (countryId) => api.get('/api/sightings', { params: { countryId } }).then(r => r.data);
 export const postSighting   = (data)      => api.post('/api/sightings', data).then(r => r.data);
 
+// ── Projections ─────────────────────────────────────────────────────────────
+export const getProjections = ()          => api.get('/api/projections').then(r => r.data);
+export const getHistory     = (ecoId)     => api.get(`/api/projections/${ecoId}`).then(r => r.data);
+
 export default api;
