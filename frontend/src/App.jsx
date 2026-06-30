@@ -112,7 +112,7 @@ export default function App() {
         <div className="loading-wave">
           <span /><span /><span /><span /><span />
         </div>
-        <p>Initialising Ocean Guardian…</p>
+        <p>Initialising Blue Pacific Guard…</p>
       </div>
     );
   }
@@ -122,10 +122,9 @@ export default function App() {
       {/* ── Header ── */}
       <header className="app-header">
         <div className="app-logo">
-          <img src={logo} alt="Ocean Guardian Logo" className="logo-img" />
+          <img src={logo} alt="Blue Pacific Guard Logo" className="logo-img" />
           <div>
-            <h1>Ocean Guardian</h1>
-            <span className="logo-sub">{selectedCountry?.name || 'Pacific'} Marine Monitor</span>
+            <h1>Blue Pacific Guard</h1>
           </div>
         </div>
 

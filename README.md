@@ -1,6 +1,6 @@
-# 🌊 Ocean Guardian
+# 🌊 Blue Pacific Guard
 
-A real-time marine ecosystem monitoring platform for Vanuatu's ocean zones.
+A real-time marine ecosystem monitoring platform for the Pacific's ocean zones.
 
 ## Stack
 - **Backend**: Node.js + Express + PostgreSQL

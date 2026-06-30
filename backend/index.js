@@ -81,7 +81,7 @@ async function startServer() {
   await autoSetup();
 
   app.listen(PORT, () => {
-    console.log(`\n🌊 Ocean Guardian API running on http://localhost:${PORT}\n`);
+    console.log(`\n🌊 Blue Pacific Guard API running on http://localhost:${PORT}\n`);
   });
 }
 
