@@ -317,9 +317,16 @@ const sightingsData = [
 ];
 
 // ─── MAIN SEED FUNCTION ───────────────────────────────────────────────────────
-async function seed() {
+async function seed(closePool = true) {
   const client = await pool.connect();
   try {
+    // Check if we already have data
+    const ecoCheck = await client.query('SELECT id FROM ecosystems LIMIT 1');
+    if (ecoCheck.rows.length > 0) {
+      console.log('⏩ Database already has ecosystem data, skipping seed.');
+      return;
+    }
+
     await client.query('BEGIN');
 
     // --- Ecosystems ---
@@ -435,11 +442,19 @@ async function seed() {
     throw err;
   } finally {
     client.release();
-    await pool.end();
+    if (closePool) {
+      await pool.end();
+    }
   }
 }
 
-seed().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Allow running directly or importing
+if (require.main === module) {
+  seed(true).catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
+module.exports = seed;
+

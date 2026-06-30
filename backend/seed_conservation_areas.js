@@ -167,7 +167,7 @@ function generateGeoJSONPolygon(lat, lng, radius = 0.05) {
   };
 }
 
-async function seedMPAs() {
+async function seedMPAs(closePool = true) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -175,6 +175,7 @@ async function seedMPAs() {
     console.log('🌱 Seeding Pacific Conservation Areas (MPAs)...');
 
     for (const data of conservationData) {
+      // ... same logic ...
       // 1. Get Country ID
       const countryRes = await client.query(
         'SELECT id FROM countries WHERE code = $1 OR name = $2',
@@ -205,7 +206,7 @@ async function seedMPAs() {
              country_id = $3, 
              is_mpa = $4,
              zone_type = $5
-           WHERE id = $6`,
+            WHERE id = $6`,
           [fullDescription, JSON.stringify(geojson), countryId, true, 'marine_protected_area', existing.rows[0].id]
         );
         console.log(` 🔄 Updated: ${data.name}`);
@@ -213,7 +214,7 @@ async function seedMPAs() {
         // Insert
         await client.query(
           `INSERT INTO ecosystems (name, zone_type, health_score, description, geojson, country_id, is_mpa)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [data.name, 'marine_protected_area', 85, fullDescription, JSON.stringify(geojson), countryId, true]
         );
         console.log(` ✅ Inserted: ${data.name}`);
@@ -227,8 +228,15 @@ async function seedMPAs() {
     console.error('❌ Error seeding MPAs:', error.message);
   } finally {
     client.release();
-    await pool.end();
+    if (closePool) {
+      await pool.end();
+    }
   }
 }
 
-seedMPAs();
+if (require.main === module) {
+  seedMPAs(true);
+}
+
+module.exports = seedMPAs;
+

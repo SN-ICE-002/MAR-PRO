@@ -73,6 +73,19 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Internal server error', detail: err.message });
 });
 
-app.listen(PORT, () => {
-  console.log(`\n🌊 Ocean Guardian API running on http://localhost:${PORT}\n`);
+const autoSetup = require('./autoSetup');
+
+async function startServer() {
+  // ── Database Auto-Setup ──
+  // Ensures schema, migrations, and seed data are applied automatically
+  await autoSetup();
+
+  app.listen(PORT, () => {
+    console.log(`\n🌊 Ocean Guardian API running on http://localhost:${PORT}\n`);
+  });
+}
+
+startServer().catch(err => {
+  console.error('Failed to start server:', err);
 });
+
