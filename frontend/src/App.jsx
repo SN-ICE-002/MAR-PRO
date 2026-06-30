@@ -7,6 +7,7 @@ import SightingForm from './components/SightingForm';
 import SightingPanel from './components/SightingPanel';
 import { getEcosystems, getSpecies, getRecentEvents, getAlerts, getSightings, getEcosystem, getCountries, getProjections } from './api';
 import './App.css';
+import logo from './assets/logo.jpeg';
 
 export default function App() {
   const [countries,      setCountries]     = useState([]);
@@ -113,7 +114,7 @@ export default function App() {
       {/* ── Header ── */}
       <header className="app-header">
         <div className="app-logo">
-          <span className="logo-icon">🌊</span>
+          <img src={logo} alt="Ocean Guardian Logo" className="logo-img" />
           <div>
             <h1>Ocean Guardian</h1>
             <span className="logo-sub">{selectedCountry?.name || 'Pacific'} Marine Monitor</span>

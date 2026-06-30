@@ -64,9 +64,11 @@
   gap: 12px;
   flex-shrink: 0;
 }
-.logo-icon {
-  font-size: 26px;
-  filter: drop-shadow(0 0 8px rgba(45,212,191,0.6));
+.logo-img {
+  height: 38px;
+  width: auto;
+  border-radius: 6px;
+  object-fit: contain;
 }
 .app-logo h1 {
   font-size: 17px;

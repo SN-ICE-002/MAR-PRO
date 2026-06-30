@@ -42,13 +42,13 @@ export default function Map({ center, zoom, ecosystems, events, sightings, onZon
       };
     }
 
-    const colour = healthColour(score);
+    const colour = eco?.is_mpa ? '#10b981' : healthColour(score);
     return {
-      color:       isSelected ? '#ffffff' : colour,
-      weight:      isSelected ? 3 : 1.5,
+      color:       isSelected ? '#ffffff' : (eco?.is_mpa ? '#059669' : colour),
+      weight:      isSelected ? 3 : (eco?.is_mpa ? 2 : 1.5),
       opacity:     0.9,
       fillColor:   colour,
-      fillOpacity: isSelected ? 0.35 : 0.15,
+      fillOpacity: isSelected ? 0.35 : (eco?.is_mpa ? 0.25 : 0.15),
     };
   }, [ecosystems, selectedZoneId]);
 
@@ -221,6 +221,10 @@ export default function Map({ center, zoom, ecosystems, events, sightings, onZon
         <div className="legend-row">
           <div className="legend-dot" style={{ backgroundColor: '#8b5cf6' }} />
           <span>GBIF Records</span>
+        </div>
+        <div className="legend-row">
+          <div className="legend-zone mpa" />
+          <span>Conservation Area</span>
         </div>
         <div className="legend-row">
           <div className="legend-dot dash" />

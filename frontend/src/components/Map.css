@@ -42,6 +42,16 @@
   border: 1px dashed #64748b;
   background: transparent;
 }
+.legend-zone {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.legend-zone.mpa {
+  background: rgba(16, 185, 129, 0.25);
+  border: 1px solid #059669;
+}
 .badge {
   padding: 1px 4px;
   border-radius: 4px;

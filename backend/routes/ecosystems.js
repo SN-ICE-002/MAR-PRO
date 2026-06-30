@@ -15,6 +15,7 @@ router.get('/', async (req, res) => {
         e.description,
         e.geojson,
         e.country_id,
+        e.is_mpa,
         e.created_at,
         COUNT(DISTINCT a.id) FILTER (WHERE a.resolved = false) AS active_alerts,
         COUNT(DISTINCT sz.species_id) AS species_count
