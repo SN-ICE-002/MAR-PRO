@@ -50,9 +50,9 @@
 .app-header {
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 0 20px;
-  height: 56px;
+  gap: 32px;
+  padding: 0 32px;
+  height: 80px;
   flex-shrink: 0;
   background: var(--bg-navy);
   border-bottom: 1px solid var(--border);
@@ -65,26 +65,28 @@
   flex-shrink: 0;
 }
 .logo-img {
-  height: 38px;
+  height: 54px;
   width: auto;
-  border-radius: 6px;
+  border-radius: 8px;
   object-fit: contain;
+  box-shadow: var(--shadow-md);
 }
 .app-logo h1 {
-  font-size: 17px;
+  font-size: 24px;
   font-weight: 800;
   background: linear-gradient(135deg, var(--teal-400), var(--blue-400));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 .logo-sub {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-muted);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   display: block;
+  margin-top: 2px;
 }
 
 /* Nav */
@@ -94,12 +96,12 @@
 }
 .nav-btn {
   position: relative;
-  padding: 6px 14px;
-  border-radius: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -134,15 +136,15 @@
 .country-dropdown select {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--text-primary);
-  font-size: 13px;
-  padding: 6px 12px;
+  font-size: 15px;
+  padding: 10px 16px;
   outline: none;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: all 0.2s;
-  min-width: 160px;
+  min-width: 200px;
 }
 .country-dropdown select:hover {
   background: rgba(255, 255, 255, 0.08);
@@ -155,13 +157,13 @@
 
 /* Header status */
 .header-status {
-  padding-left: 12px;
+  padding-left: 20px;
   border-left: 1px solid var(--border);
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 12px;
+  font-size: 14px;
   color: var(--text-muted);
 }
 .status-dot {
