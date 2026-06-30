@@ -23,6 +23,12 @@
   gap: 10px;
 }
 
+@media (max-width: 480px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .coord-hint {
   font-size: 11px;
   color: var(--text-muted);

@@ -9,6 +9,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px 10px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .alert-panel-header h3 {
   font-size: 13px;

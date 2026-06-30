@@ -112,7 +112,7 @@ export default function SightingForm({ species, onSubmitted, selectedCountry }) 
             name="lat"
             type="number"
             step="0.000001"
-            placeholder={selectedCountry?.center_lat.toFixed(3) || "-16.500"}
+            placeholder={selectedCountry?.center_lat ? Number(selectedCountry.center_lat).toFixed(3) : "-16.500"}
             className="form-input"
             value={form.lat}
             onChange={handleChange}
@@ -126,7 +126,7 @@ export default function SightingForm({ species, onSubmitted, selectedCountry }) 
             name="lng"
             type="number"
             step="0.000001"
-            placeholder={selectedCountry?.center_lng.toFixed(3) || "167.500"}
+            placeholder={selectedCountry?.center_lng ? Number(selectedCountry.center_lng).toFixed(3) : "167.500"}
             className="form-input"
             value={form.lng}
             onChange={handleChange}
@@ -136,7 +136,7 @@ export default function SightingForm({ species, onSubmitted, selectedCountry }) 
       </div>
 
       <div className="coord-hint">
-        💡 {selectedCountry ? `${selectedCountry.name} is approx. lat ${selectedCountry.bbox.minLat} to ${selectedCountry.bbox.maxLat}` : "Please enter decimal degrees"}
+        💡 {selectedCountry?.bbox ? `${selectedCountry.name} is approx. lat ${selectedCountry.bbox.minLat} to ${selectedCountry.bbox.maxLat}` : "Please enter decimal degrees"}
       </div>
 
       {/* Reporter */}

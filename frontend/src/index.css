@@ -65,6 +65,21 @@ body,
   height: 100%;
   background: var(--bg-deepblue);
   overflow: hidden;
+  
+  /* Fluid typography base */
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  html, body, #root {
+    overflow: auto; /* Allow scrolling on biological mobile devices if needed, though shell handles it */
+    font-size: 15px;
+  }
+}
+
+img {
+  max-width: 100%;
+  height: auto;
 }
 
 /* ─── Scrollbars ─── */

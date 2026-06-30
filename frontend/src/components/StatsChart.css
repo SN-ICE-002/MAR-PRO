@@ -13,6 +13,21 @@
   gap: 10px;
 }
 
+@media (min-width: 480px) and (max-width: 1024px), (max-width: 768px) {
+  .stat-cards {
+    flex-direction: row;
+  }
+  .stat-card {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-cards {
+    flex-direction: column;
+  }
+}
+
 .stat-card {
   display: flex;
   align-items: center;

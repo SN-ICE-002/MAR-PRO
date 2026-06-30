@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Map from './components/Map';
 import StatsChart from './components/StatsChart';
 import AlertPanel from './components/AlertPanel';
@@ -21,7 +21,15 @@ export default function App() {
   const [projections,   setProjections]   = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [error,         setError]         = useState(null);
-  const [sidebarView,   setSidebarView]   = useState('dashboard'); // 'dashboard' | 'zone' | 'report'
+  const [sidebarView,   setSidebarView]   = useState('dashboard'); // 'dashboard' | 'zone' | 'report' | 'alerts'
+  const sidebarRef = useRef(null);
+
+  // Scroll to sidebar on view change (Mobile UX)
+  useEffect(() => {
+    if (window.innerWidth <= 768 && sidebarRef.current && sidebarView !== 'dashboard') {
+      sidebarRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [sidebarView]);
 
   // Fetch countries once on mount
   useEffect(() => {
@@ -192,7 +200,7 @@ export default function App() {
         </div>
 
         {/* Sidebar */}
-        <aside className="app-sidebar">
+        <aside className="app-sidebar" ref={sidebarRef}>
           {sidebarView === 'dashboard' && (
             <div className="fade-slide-in">
               <StatsChart alerts={alerts} species={species} />

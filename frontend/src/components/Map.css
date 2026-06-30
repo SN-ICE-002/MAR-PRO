@@ -17,6 +17,19 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .map-legend {
+    bottom: 12px;
+    left: 12px;
+    padding: 8px 12px;
+    gap: 4px;
+    max-width: 140px;
+  }
+  .map-legend h4 { font-size: 8px; }
+  .legend-row { font-size: 10px; gap: 6px; }
 }
 .map-legend h4 {
   font-size: 10px;
